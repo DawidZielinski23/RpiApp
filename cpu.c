@@ -226,7 +226,7 @@ char* GetPiManufacturerString(uint8_t Index)
 
 void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 {
-    char ReadLine[MAX_LINE_LENGTH] = '\0';
+    char ReadLine[MAX_LINE_LENGTH] = {'\0'};
     FILE* FileDescriptor = NULL;
     char* String = NULL;
     char* RevisionCode = NULL;
@@ -250,9 +250,10 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         while(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) != NULL)
         {
-            if(strstr(ReadLine, HARDWARE_STRING))
+            if(!strncmp(ReadLine, HARDWARE_STRING, HARDWARE_STRING_LENGTH))
             {
                 HardwareFound = true;
+                break;
             }
         }
 
@@ -262,7 +263,7 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         }
 
         String = ReadLine + HARDWARE_STRING_LENGTH;
-        String = strstr(String, ':');
+        String = strstr(String, ":");
         if(String == NULL)
         {
             break;
@@ -281,9 +282,10 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         while(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) != NULL)
         {
-            if(strstr(ReadLine, REVISION_STRING))
+            if(!strncmp(ReadLine, REVISION_STRING, REVISION_STRING_LENGTH))
             {
                 RevisionFound = true;
+                break;
             }
         }
 
@@ -293,7 +295,7 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         }
 
         String = ReadLine + REVISION_STRING_LENGTH;
-        String = strstr(String, ':');
+        String = strstr(String, ":");
         if(String == NULL)
         {
             break;
@@ -336,9 +338,10 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         while(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) != NULL)
         {
-            if(strstr(ReadLine, SERIAL_STRING))
+            if(!strncmp(ReadLine, SERIAL_STRING, SERIAL_STRING_LENGTH))
             {
                 SerialFound = true;
+                break;
             }
         }
 
@@ -348,20 +351,25 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         }
 
         String = ReadLine + SERIAL_STRING_LENGTH;
-        String = strstr(String, ':');
+        String = strstr(String, ":");
         if(String == NULL)
         {
             break;
         }
 
         String = String + 2;
-        strncpy(PiInfo->RevisionCode, String, SERIAL_STRING_LENGTH - 1);
+        strncpy(Serial, String, SERIAL_VALUE_LENGTH - 1);
         if(Serial == NULL)
         {
             break;
         }
 
-        Serial[SERIAL_STRING_LENGTH] = '\0';
+        Serial[SERIAL_VALUE_LENGTH] = '\0';
 
     } while(0);
+
+    if(FileDescriptor != NULL)
+    {
+        fclose(FileDescriptor);
+    }
 }

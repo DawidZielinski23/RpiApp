@@ -22,6 +22,7 @@
 #define SERIAL_STRING          "Serial"
 #define SERIAL_STRING_LENGTH   6
 #define BCM_STRING_LENGTH      8
+#define SERIAL_VALUE_LENGTH    17
 
 /* Models */
 typedef enum PI_MODEL
