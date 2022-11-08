@@ -108,7 +108,7 @@ char* GetPiModelString(uint8_t Index);
 char* GetPiRevisionString(uint8_t Index);
 char* GetPiRamString(uint8_t Index);
 char* GetPiManufacturerString(uint8_t Index);
-void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial);
+enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial);
 
 
 

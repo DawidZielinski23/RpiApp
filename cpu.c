@@ -167,6 +167,7 @@ PI_MANUFACTURER GetPiManufacturer(uint8_t Index)
 char* GetPiModelString(uint8_t Index)
 {
     char* PiModelString = NULL;
+
     if(Index < PI_MODEL_COUNT)
     {
         PiModelString = Global_PiModelString[Index];
@@ -182,6 +183,7 @@ char* GetPiModelString(uint8_t Index)
 char* GetPiRevisionString(uint8_t Index)
 {
     char* PiRevisionString = NULL;
+
     if(Index < PI_REV_COUNT)
     {
         PiRevisionString = Global_PiRevisionString[Index];
@@ -197,6 +199,7 @@ char* GetPiRevisionString(uint8_t Index)
 char* GetPiRamString(uint8_t Index)
 {
     char* PiRamString = NULL;
+
     if(Index < PI_RAM_COUNT)
     {
         PiRamString = Global_PiRamString[Index];
@@ -212,6 +215,7 @@ char* GetPiRamString(uint8_t Index)
 char* GetPiManufacturerString(uint8_t Index)
 {
     char* PiManufacturerString = NULL;
+
     if(Index < PI_MAN_COUNT)
     {
         PiManufacturerString = Global_PiManufacturerString[Index];
@@ -224,27 +228,34 @@ char* GetPiManufacturerString(uint8_t Index)
     return PiManufacturerString;
 }
 
-void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
+enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 {
     char ReadLine[MAX_LINE_LENGTH] = {'\0'};
+    enum status Status = STATUS_OK;
     FILE* FileDescriptor = NULL;
-    char* String = NULL;
-    char* RevisionCode = NULL;
-    uint8_t Index = 0;
     bool HardwareFound = false;
     bool RevisionFound = false;
+    char* RevisionCode = NULL;
     bool SerialFound = false;
+    char* String = NULL;
+    uint8_t Index = 0;
+
+    LOG_FUNCTION_NAME(__func__);
 
     do
     {
         if(PiInfo == NULL || Bcm == NULL || Serial == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
+            Status = STATUS_PARAM_ERR;
             break;
         }
 
         FileDescriptor = fopen(CPUINFO_PATH, "r");
         if(FileDescriptor == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to open %s!", CPUINFO_PATH);
+            Status = STATUS_FILE_ERR;
             break;
         }
 
@@ -252,6 +263,7 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         {
             if(!strncmp(ReadLine, HARDWARE_STRING, HARDWARE_STRING_LENGTH))
             {
+                WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "\"%s\" found.", HARDWARE_STRING);
                 HardwareFound = true;
                 break;
             }
@@ -259,6 +271,11 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         if(HardwareFound == false)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in %s.",
+                          HARDWARE_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
             break;
         }
 
@@ -266,6 +283,8 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         String = strstr(String, ":");
         if(String == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
             break;
         }
 
@@ -273,6 +292,8 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         strncpy(Bcm, String, BCM_STRING_LENGTH - 1);
         if(Bcm == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "String operation failed.");
+            Status = STATUS_STR_ERR;
             break;
         }
 
@@ -284,6 +305,7 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         {
             if(!strncmp(ReadLine, REVISION_STRING, REVISION_STRING_LENGTH))
             {
+                WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "\"%s\" found.", REVISION_STRING);
                 RevisionFound = true;
                 break;
             }
@@ -291,6 +313,11 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         if(RevisionFound == false)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in %s.",
+                          REVISION_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
             break;
         }
 
@@ -298,6 +325,8 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         String = strstr(String, ":");
         if(String == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
             break;
         }
 
@@ -305,6 +334,8 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         strncpy(PiInfo->RevisionCode, String, PI_REVISION_CODE_LENGTH - 1);
         if(Bcm == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "String operation failed.");
+            Status = STATUS_STR_ERR;
             break;
         }
 
@@ -321,6 +352,8 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         if(Index == PI_NUMBER_OF_REVISIONS)
         {
+            WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL,
+                          "Unknown revision code. Setting information to unknown");
             PiInfo->Model = PI_MODEL_UNKNOWN;
             PiInfo->Revision = PI_REV_UNKNOWN;
             PiInfo->Ram = PI_RAM_UNKNOWN;
@@ -340,6 +373,7 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         {
             if(!strncmp(ReadLine, SERIAL_STRING, SERIAL_STRING_LENGTH))
             {
+                WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "\"%s\" found.", SERIAL_STRING);
                 SerialFound = true;
                 break;
             }
@@ -347,6 +381,11 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
         if(SerialFound == false)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in %s.",
+                          SERIAL_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
             break;
         }
 
@@ -354,6 +393,8 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         String = strstr(String, ":");
         if(String == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
             break;
         }
 
@@ -361,15 +402,20 @@ void GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         strncpy(Serial, String, SERIAL_VALUE_LENGTH - 1);
         if(Serial == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "String operation failed.");
+            Status = STATUS_STR_ERR;
             break;
         }
 
         Serial[SERIAL_VALUE_LENGTH] = '\0';
-
     } while(0);
 
     if(FileDescriptor != NULL)
     {
         fclose(FileDescriptor);
     }
+
+    LOG_FUNCTION_END(__func__);
+
+    return Status;
 }

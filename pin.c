@@ -1,34 +1,43 @@
 #include"pin.h"
 
-void GetPinInfo(PIN_INFO* Pin)
+enum status GetPinInfo(PIN_INFO* Pin)
 {
-    int Descriptor;
-    char PinNumber[PIN_STRING_LENGTH];
-    char DirectionString[PATH_STRING_LENGTH];
-    char ValuePath[PATH_STRING_LENGTH];
-    char ModeString[MODE_STRING_LENGTH];
-    char Value;
-    ssize_t WrittenBytes;
-    int ReadStatus;
+    char DirectionString[PATH_STRING_LENGTH] = {'\0'};
+    char ModeString[MODE_STRING_LENGTH] = {'\0'};
+    char ValuePath[PATH_STRING_LENGTH] = {'\0'};
+    char PinNumber[PIN_STRING_LENGTH] = {'\0'};
+    enum status Status = STATUS_OK;
+    ssize_t WrittenBytes = 0;
+    int Descriptor = -1;
+    int ReadStatus = 0;
+    char Value = 0;
+
+    LOG_FUNCTION_NAME(__func__);
 
     do
     {
         if(GetPinInfo == NULL)
         {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
+            Status = STATUS_PARAM_ERR;
             break;
         }
 
         Descriptor = open(EXPORT_PATH, O_WRONGLY);
         if(Descriptor == -1)
         {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to open %s!", EXPORT_PATH);
+            Status = STATUS_FILE_ERR;
             break;
         }
 
         snprintf(PinNumber, MODE_STRING_LENGTH, "%d", Pin->Number);
 
         WrittenBytes = write(Descriptor, PinNumber, strlen(PinNumber) - 1);
-        if(WrittenBytes != (strlen(PinNumber) - 1)
+        if(WrittenBytes != (strlen(PinNumber) - 1))
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Write to %s failed", EXPORT_PATH);
+            Status = STATUS_WRITE_ERR;
             break;
         }
 
@@ -37,12 +46,20 @@ void GetPinInfo(PIN_INFO* Pin)
         Descriptor = open(DIRECTION_PATH(DirectionString, Pin->Number), O_WRONGLY);
         if(Descriptor == -1)
         {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
+                          "Failed to open %s!",
+                          DIRECTION_PATH(DirectionString, Pin->Number));
+            Status = STATUS_FILE_ERR;
             break;
         }
 
         ReadStatus = read(Descriptor, ModeString , sizeof(ModeString))
         if(ReadStatus == -1)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "Reading %s failed",
+                          DIRECTION_PATH(DirectionString, Pin->Number));
+            Status = STATUS_READ_ERR;
             break;
         }
 
@@ -64,12 +81,20 @@ void GetPinInfo(PIN_INFO* Pin)
         Descriptor open(VALUE_PATH(ValuePath, Pin->Number), O_WRONLY);
         if(Descriptor == -1)
         {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
+                          "Failed to open %s!",
+                          VALUE_PATH(ValuePath, Pin->Number));
+            Status = STATUS_FILE_ERR;
             break;
         }
 
         ReadStatus = read(Descriptor, Value, sizeof(Value));
         if(ReadStatus == -1)
         {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "Reading %s failed",
+                          VALUE_PATH(ValuePath, Pin->Number));
+            Status = STATUS_READ_ERR;
             break;
         }
 
@@ -77,4 +102,8 @@ void GetPinInfo(PIN_INFO* Pin)
 
         Pin->Value = atoi(&Value);
     } while(0);
+
+    LOG_FUNCTION_END(__func__);
+
+    return Status;
 }
