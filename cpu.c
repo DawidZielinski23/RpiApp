@@ -8,8 +8,8 @@ static PI_INFO Global_RevisionCodeInfo[PI_NUMBER_OF_REVISIONS] =
     {"900093", PI_MODEL_0,    PI_REV_1_3, PI_RAM_512MB, PI_MAN_SONY_UK   },
     {"9000c1", PI_MODEL_0W,   PI_REV_1_1, PI_RAM_512MB, PI_MAN_SONY_UK   },
     {"9020e0", PI_MODEL_3AP,  PI_REV_1_0, PI_RAM_512MB, PI_MAN_SONY_UK   },
-    {"900092", PI_MODEL_0,    PI_REV_1_2, PI_RAM_512MB, PI_MAN_EMBEST    },
-    {"900093", PI_MODEL_0,    PI_REV_1_3, PI_RAM_512MB, PI_MAN_EMBEST    },
+    {"920092", PI_MODEL_0,    PI_REV_1_2, PI_RAM_512MB, PI_MAN_EMBEST    },
+    {"920093", PI_MODEL_0,    PI_REV_1_3, PI_RAM_512MB, PI_MAN_EMBEST    },
     {"900061", PI_MODEL_CM1,  PI_REV_1_1, PI_RAM_512MB, PI_MAN_SONY_UK   },
     {"a01040", PI_MODEL_2B,   PI_REV_1_0, PI_RAM_1GB,   PI_MAN_SONY_UK   },
     {"a01041", PI_MODEL_2B,   PI_REV_1_1, PI_RAM_1GB,   PI_MAN_SONY_UK   },
@@ -228,6 +228,179 @@ char* GetPiManufacturerString(uint8_t Index)
     return PiManufacturerString;
 }
 
+enum status DecodePiInfoFromRevisionCode(PI_INFO* PiInfo)
+{
+    char ModelCharacters[PI_MODEL_CHARACTERS] = {'\0'};
+    char ManufacturerCharacter = '\0';
+    enum status Status = STATUS_OK;
+    char RevisionCharacter = '\0';
+    char MemoryCharacter = '\0';
+    uint32_t ModelCode = 0;
+    uint8_t Index = 0;
+
+    LOG_FUNCTION_NAME(__func__);
+
+    do
+    {
+        if((PiInfo == NULL))
+        {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
+            Status = STATUS_PARAM_ERR;
+            break;
+        }
+
+        if(strlen(PiInfo->RevisionCode) != PI_REVISION_CODE_LENGTH - 1)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Invalid revision code.");
+            Status = STATUS_PARAM_ERR;
+            break;
+        }
+
+        PiInfo->Model = PI_MODEL_UNKNOWN;
+        PiInfo->Revision = PI_REV_UNKNOWN;
+        PiInfo->Ram = PI_RAM_UNKNOWN;
+        PiInfo->Manufacturer = PI_MAN_UNKNOWN;
+
+        MemoryCharacter = PiInfo->RevisionCode[0];
+        ManufacturerCharacter = PiInfo->RevisionCode[1];
+        RevisionCharacter = PiInfo->RevisionCode[5];
+        for(Index = 0; Index < PI_MODEL_CHARACTERS - 1; Index++)
+        {
+            ModelCharacters[0] = PiInfo->RevisionCode[Index + 2];
+        }
+        ModelCharacters[PI_MODEL_CHARACTERS] = '\0';
+
+        ModelCode = strtoul(ModelCharacters, NULL, 16);
+
+        /* Memory */
+        switch(MemoryCharacter)
+        {
+        case '9':
+            PiInfo->Ram = PI_RAM_512MB;
+            break;
+        case 'a':
+            PiInfo->Ram = PI_RAM_1GB;
+            break;
+        case 'b':
+            PiInfo->Ram = PI_RAM_2GB;
+            break;
+        case 'c':
+            PiInfo->Ram = PI_RAM_4GB;
+            break;
+        case 'd':
+            PiInfo->Ram = PI_RAM_8GB;
+            break;
+        default:
+            WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL, "Unknown memory character.");
+            break;
+        }
+
+        /* Manufacturer */
+        switch(ManufacturerCharacter)
+        {
+        case '0':
+            PiInfo->Manufacturer = PI_MAN_SONY_UK;
+            break;
+        case '2':
+            PiInfo->Manufacturer = PI_MAN_EMBEST;
+            break;
+        case '3':
+            PiInfo->Manufacturer = PI_MAN_SONY_JAPAN;
+            break;
+        case '5':
+            PiInfo->Manufacturer = PI_MAN_STADIUM;
+            break;
+        default:
+            WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL, "Unknown manufacturer character.");
+            break;
+        }
+
+        /* Revision */
+        switch(RevisionCharacter)
+        {
+        case '0':
+            PiInfo->Revision = PI_REV_1_0;
+            break;
+        case '1':
+            PiInfo->Revision = PI_REV_1_1;
+            break;
+        case '2':
+            PiInfo->Revision = PI_REV_1_2;
+            break;
+        case '3':
+            PiInfo->Revision = PI_REV_1_3;
+            break;
+        case '4':
+            PiInfo->Revision = PI_REV_1_4;
+            break;
+        case '5':
+            PiInfo->Revision = PI_REV_1_5;
+            break;
+        default:
+            WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL, "Unknown revision character.");
+            break;
+        }
+
+        /* Model */
+        switch(ModelCode)
+        {
+        case 0x2:
+            PiInfo->Model = PI_MODEL_AP;
+            break;
+        case 0x3:
+            PiInfo->Model = PI_MODEL_BP;
+            break;
+        case 0x9:
+            PiInfo->Model = PI_MODEL_0;
+            break;
+        case 0xC:
+            PiInfo->Model = PI_MODEL_0W;
+            break;
+        case 0xE:
+            PiInfo->Model = PI_MODEL_3AP;
+            break;
+        case 0x6:
+            PiInfo->Model = PI_MODEL_CM1;
+            break;
+        case 0x104:
+        case 0x204:
+            PiInfo->Model = PI_MODEL_2B;
+            break;
+        case 0x208:
+            PiInfo->Model = PI_MODEL_3B;
+            break;
+        case 0x20A:
+            PiInfo->Model = PI_MODEL_CM3;
+            break;
+        case 0x20D:
+            PiInfo->Model = PI_MODEL_3BP;
+            break;
+        case 0x210:
+            PiInfo->Model = PI_MODEL_CM3P;
+            break;
+        case 0x311:
+            PiInfo->Model = PI_MODEL_4B;
+            break;
+        case 0x313:
+            PiInfo->Model = PI_MODEL_400;
+            break;
+        case 0x314:
+            PiInfo->Model = PI_MODEL_CM4;
+            break;
+        case 0x212:
+            PiInfo->Model = PI_MODEL_02W;
+            break;
+        default:
+            WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL, "Unknown model number.");
+            break;
+        }
+    } while (0);
+
+    LOG_FUNCTION_END(__func__);
+
+    return Status;
+}
+
 enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 {
     char ReadLine[MAX_LINE_LENGTH] = {'\0'};
@@ -244,7 +417,7 @@ enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
     do
     {
-        if(PiInfo == NULL || Bcm == NULL || Serial == NULL)
+        if((PiInfo == NULL) || (Bcm == NULL) || (Serial == NULL))
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
             Status = STATUS_PARAM_ERR;
@@ -353,11 +526,18 @@ enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         if(Index == PI_NUMBER_OF_REVISIONS)
         {
             WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL,
-                          "Unknown revision code. Setting information to unknown");
-            PiInfo->Model = PI_MODEL_UNKNOWN;
-            PiInfo->Revision = PI_REV_UNKNOWN;
-            PiInfo->Ram = PI_RAM_UNKNOWN;
-            PiInfo->Manufacturer = PI_MAN_UNKNOWN;
+                          "Unknown revision code. Trying to decode it.");
+            Status = DecodePiInfoFromRevisionCode(PiInfo)
+            if(Status != STATUS_OK)
+            {
+                WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL,
+                              "Failed to decode information from revision code. Setting values to unknown");
+                PiInfo->Model = PI_MODEL_UNKNOWN;
+                PiInfo->Revision = PI_REV_UNKNOWN;
+                PiInfo->Ram = PI_RAM_UNKNOWN;
+                PiInfo->Manufacturer = PI_MAN_UNKNOWN;
+                Status = STATUS_OK;
+            }
         }
         else
         {

@@ -6,6 +6,7 @@
 /* Basing on last table from
  * https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes */
 
+#define PI_MODEL_CHARACTERS      4
 #define PI_REVISION_CODE_LENGTH  7
 #define PI_REV_STRING_LENGTH     7
 #define PI_RAM_STRING_LENGTH     7
@@ -108,6 +109,7 @@ char* GetPiModelString(uint8_t Index);
 char* GetPiRevisionString(uint8_t Index);
 char* GetPiRamString(uint8_t Index);
 char* GetPiManufacturerString(uint8_t Index);
+enum status DecodePiInfoFromRevisionCode(PI_INFO* PiInfo);
 enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial);
 
 
