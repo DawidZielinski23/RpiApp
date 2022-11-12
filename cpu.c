@@ -599,3 +599,316 @@ enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
 
     return Status;
 }
+
+enum status DiscoverCpuNumber(uint8_t* Count)
+{
+    char ReadLine[MAX_LINE_LENGTH] = {'\0'};
+    enum status Status = STATUS_OK;
+    FILE* FileDescriptor = NULL;
+
+    LOG_FUNCTION_NAME(__func__);
+
+    do
+    {
+        if(Count == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
+            Status = STATUS_PARAM_ERR;
+            break;
+        }
+
+        FileDescriptor = fopen(CPUINFO_PATH, "r");
+        if(FileDescriptor == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to open %s!", CPUINFO_PATH);
+            Status = STATUS_FILE_ERR;
+            break;
+        }
+
+        *Count = 0;
+
+        while(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) != NULL)
+        {
+            if(!strncmp(ReadLine, PROCESSOR_STRING, PROCESSOR_STRING_LENGTH))
+            {
+                WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "\"%s\" found.", PROCESSOR_STRING);
+                *Count++;
+            }
+        }
+
+        if(*Count == 0)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found. No CPU discovered.",
+                          PROCESSOR_STRING);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+    } while(0);
+
+    if(FileDescriptor != NULL)
+    {
+        fclose(FileDescriptor);
+    }
+
+    LOG_FUNCTION_END(__func__);
+
+    return Status;
+}
+
+enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
+{
+    char ReadLine[MAX_LINE_LENGTH] = {'\0'};
+    enum status Status = STATUS_OK;
+    bool CpuStringsFound = false;
+    FILE* FileDescriptor = NULL;
+    uint8_t ReadCpuNumber = 0;
+    bool CpuFound = false;
+    char* String = NULL;
+
+    LOG_FUNCTION_NAME(__func__);
+
+    do
+    {
+        if(CpuInfo == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
+            Status = STATUS_PARAM_ERR;
+            break;
+        }
+
+        FileDescriptor = fopen(CPUINFO_PATH, "r");
+        if(FileDescriptor == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to open %s!", CPUINFO_PATH);
+            Status = STATUS_FILE_ERR;
+            break;
+        }
+
+        while(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) != NULL)
+        {
+            if(!strncmp(ReadLine, PROCESSOR_STRING, PROCESSOR_STRING_LENGTH))
+            {
+                String = ReadLine + PROCESSOR_STRING_LENGTH;
+                String = strstr(String, ":");
+                if(String == NULL)
+                {
+                    WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+                    break;
+                }
+
+                String = String + 2;
+                ReadCpuNumber = (uint8_t)strtoul(ReadLine, NULL, 10);
+                if(ReadCpuNumber == CpuNumber)
+                {
+                    WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "CPU number %d found.", CpuNumber);
+                    CpuFound = true;
+                    break;
+                }
+            }
+        }
+
+        if(CpuFound == false)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "CPU number %d not found.", CpuNumber);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(strncmp(ReadLine, MODEL_NAME_STRING, MODEL_NAME_STRING_LENGTH))
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in $s.",
+                          MODEL_NAME_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        String = ReadLine + MODEL_NAME_STRING_LENGTH;
+        String = strstr(String, ":");
+        if(String == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        String = String + 2;
+        strncpy(CpuInfo->Name, String, MAX_LINE_LENGTH - 1);
+        if(CpuInfo->Name == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "String operation failed.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        while(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) != NULL)
+        {
+            if(!strncmp(ReadLine, IMPLEMENTER_STRING, IMPLEMENTER_STRING_LENGTH))
+            {
+                CpuStringsFound = true;
+                break;
+            }
+        }
+
+        if(CpuStringsFound == false)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in %s.",
+                          IMPLEMENTER_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        String = ReadLine + MODEL_NAME_STRING_LENGTH;
+        String = strstr(String, ":");
+        if(String == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        String = String + 2;
+        CpuInfo->Implementer = (uint8_t)strtoul(String, NULL, 16);
+
+        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(strncmp(ReadLine, ARCHITECTURE_STRING, ARCHITECTURE_STRING_LENGTH))
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in $s.",
+                          ARCHITECTURE_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        String = ReadLine + ARCHITECTURE_STRING_LENGTH;
+        String = strstr(String, ":");
+        if(String == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        String = String + 2;
+        CpuInfo->Architecture = (uint8_t)strtoul(String, NULL, 10);
+
+        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(strncmp(ReadLine, VARIANT_STRING, VARIANT_STRING_LENGTH))
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in $s.",
+                          VARIANT_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        String = ReadLine + VARIANT_STRING_LENGTH;
+        String = strstr(String, ":");
+        if(String == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        String = String + 2;
+        CpuInfo->Variant = (uint8_t)strtoul(String, NULL, 16);
+
+        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(strncmp(ReadLine, PART_STRING, PART_STRING_LENGTH))
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in $s.",
+                          PART_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        String = ReadLine + MODEL_NAME_STRING_LENGTH;
+        String = strstr(String, ":");
+        if(String == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        String = String + 2;
+        CpuInfo->Part = (uint8_t)strtoul(String, NULL, 16);
+
+        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        if(strncmp(ReadLine, CPU_REVISION_STRING, CPU_REVISION_STRING_LENGTH))
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
+                          "\"%s\" not found in $s.",
+                          CPU_REVISION_STRING,
+                          CPUINFO_PATH);
+            Status = STATUS_READ_ERR;
+            break;
+        }
+
+        String = ReadLine + CPU_REVISION_STRING_LENGTH;
+        String = strstr(String, ":");
+        if(String == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "\":\" not found.");
+            Status = STATUS_STR_ERR;
+            break;
+        }
+
+        String = String + 2;
+        CpuInfo->Revision = (uint8_t)strtoul(String, NULL, 16);
+    } while(0);
+
+    if(FileDescriptor != NULL)
+    {
+        fclose(FileDescriptor);
+    }
+
+    return Status;
+}
