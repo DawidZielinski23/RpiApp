@@ -527,7 +527,7 @@ enum status GetPiBasicInfo(PI_INFO* PiInfo, char* Bcm, char* Serial)
         {
             WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL,
                           "Unknown revision code. Trying to decode it.");
-            Status = DecodePiInfoFromRevisionCode(PiInfo)
+            Status = DecodePiInfoFromRevisionCode(PiInfo);
             if(Status != STATUS_OK)
             {
                 WriteDebugLog(DEBUG_LOGGING_WARNING_LEVEL,
@@ -902,7 +902,7 @@ enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
         }
 
         String = String + 2;
-        CpuInfo->Revision = (uint8_t)strtoul(String, NULL, 16);
+        CpuInfo->Revision = (uint8_t)strtoul(String, NULL, 10);
     } while(0);
 
     if(FileDescriptor != NULL)

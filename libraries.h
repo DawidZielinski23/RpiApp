@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <string.h>
-#include "..\debug_logging.h"
+#include "..\debug_logging\debug_logging.h"
 
 enum status
 {
