@@ -856,7 +856,7 @@ enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
             break;
         }
 
-        String = ReadLine + MODEL_NAME_STRING_LENGTH;
+        String = ReadLine + PART_STRING_LENGTH;
         String = strstr(String, ":");
         if(String == NULL)
         {
@@ -867,13 +867,6 @@ enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
 
         String = String + 2;
         CpuInfo->Part = (uint8_t)strtoul(String, NULL, 16);
-
-        if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
-        {
-            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Read from file failed.");
-            Status = STATUS_READ_ERR;
-            break;
-        }
 
         if(fgets(ReadLine, MAX_LINE_LENGTH, FileDescriptor) == NULL)
         {

@@ -1,6 +1,7 @@
 #include "pin.h"
 #include "cpu.h"
 #include "cmd.h"
+#include "libraries.h"
 
 void PrintPiBasicInfo()
 {
@@ -111,6 +112,11 @@ void PrintfAllCpuInfo()
             printf("\n");
         }
     } while(0);
+
+    if(Cpus != NULL)
+    {
+        free(Cpus);
+    }
 }
 
 int main(char** argv, uint32_t argc)
