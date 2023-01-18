@@ -17,7 +17,9 @@ enum status
     STATUS_READ_ERR,
     STATUS_WRITE_ERR,
     STATUS_FILE_ERR,
-    STATUS_STR_ERR
+    STATUS_STR_ERR,
+    STATUS_INPUT_ERR,
+    STATUS_CMD_ERR
 };
 
 #endif /* _LIBRARIES_H*/
