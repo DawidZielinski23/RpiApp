@@ -1,10 +1,9 @@
 #include "cmd.h"
-#include "libraries.h"
 
 static char Global_CommandsString[COMMANDS_COUNT][COMMAND_LENGTH] =
 {
     { SET_DEBUGLOG_COMMAND },
-    { HELP_COMMAND },
+    { APP_HELP_COMMAND },
     { GET_PIN_INFO_COMMAND },
     { GET_ALL_PINS_INFO_COMMAND },
     { GET_CPU_INFO_COMMAND },
@@ -48,7 +47,7 @@ bool CheckCommand(char* Command)
 
     do
     {
-        if((Command == NULL) || (strlen(Command) == 0) || (Value == NULL))
+        if((Command == NULL) || (strlen(Command) == 0))
         {
             printf("Wrong command passed!\n");
         }
@@ -84,7 +83,7 @@ bool CheckCommand(char* Command)
             break;
         }
 
-        memcpy_s(AuxiliaryCommand, Length, Command, Length);
+        memcpy(AuxiliaryCommand, Command, Length);
         AuxiliaryCommand[Length] = '\0';
 
         UpperChars(AuxiliaryCommand, Length);
@@ -123,7 +122,7 @@ enum status CopyCommandArray(bool* Array, uint8_t ArraySize)
 
     if((Array != NULL) && (ArraySize == COMMANDS_COUNT))
     {
-        memcpy_s(Array, COMMANDS_COUNT, Global_CommandsActive, COMMANDS_COUNT);
+        memcpy(Array, Global_CommandsActive, COMMANDS_COUNT);
     }
     else
     {
@@ -140,7 +139,7 @@ enum status CopyValueArray(uint32_t* Array, uint8_t ArraySize)
 
     if((Array != NULL) && (ArraySize == COMMANDS_COUNT))
     {
-        memcpy_s(Array, COMMANDS_COUNT, Global_CommandsActive, COMMANDS_COUNT);
+        memcpy(Array, Global_CommandsActive, COMMANDS_COUNT);
     }
     else
     {

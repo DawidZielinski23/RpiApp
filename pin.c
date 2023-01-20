@@ -1,6 +1,6 @@
 #include"pin.h"
 
-enum status GetPinInfo(PIN_INFO* Pin)
+enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
 {
     char DirectionString[PATH_STRING_LENGTH] = {'\0'};
     char ModeString[MODE_STRING_LENGTH] = {'\0'};
@@ -16,14 +16,16 @@ enum status GetPinInfo(PIN_INFO* Pin)
 
     do
     {
-        if(GetPinInfo == NULL)
+        if(Pin == NULL)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Invalid parameter!");
             Status = STATUS_PARAM_ERR;
             break;
         }
 
-        Descriptor = open(EXPORT_PATH, O_WRONGLY);
+        Pin->Number = Number;
+
+        Descriptor = open(EXPORT_PATH, 0x1);
         if(Descriptor == -1)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to open %s!", EXPORT_PATH);
@@ -43,7 +45,7 @@ enum status GetPinInfo(PIN_INFO* Pin)
 
         close(Descriptor);
 
-        Descriptor = open(DIRECTION_PATH(DirectionString, Pin->Number), O_WRONGLY);
+        Descriptor = open(DIRECTION_PATH(DirectionString, Pin->Number), 0x1);
         if(Descriptor == -1)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
@@ -53,7 +55,7 @@ enum status GetPinInfo(PIN_INFO* Pin)
             break;
         }
 
-        ReadStatus = read(Descriptor, ModeString , sizeof(ModeString))
+        ReadStatus = read(Descriptor, ModeString , sizeof(ModeString));
         if(ReadStatus == -1)
         {
             WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
@@ -78,7 +80,7 @@ enum status GetPinInfo(PIN_INFO* Pin)
             Pin->Mode = UNKNOWN_MODE;
         }
 
-        Descriptor open(VALUE_PATH(ValuePath, Pin->Number), O_WRONLY);
+        Descriptor = open(VALUE_PATH(ValuePath, Pin->Number), 0x1);
         if(Descriptor == -1)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
@@ -106,4 +108,24 @@ enum status GetPinInfo(PIN_INFO* Pin)
     LOG_FUNCTION_END(__func__);
 
     return Status;
+}
+
+char* GetPinModeString(PIN_MODE Mode)
+{
+    char * String = NULL;
+
+    switch(Mode)
+    {
+    case INPUT_MODE:
+        String = "Input";
+        break;
+    case OUTPUT_MODE:
+        String = "Output";
+        break;
+    case UNKNOWN_MODE:
+        String = "Unknown";
+        break;
+    }
+
+    return String;
 }

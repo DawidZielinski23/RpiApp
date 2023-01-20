@@ -6,10 +6,11 @@
 #define PATH_STRING_LENGTH 40
 #define PIN_STRING_LENGTH  2
 #define MODE_STRING_LENGTH 3
+#define PINS_COUNT         40
 
 #define EXPORT_PATH "sys/class/gpio/export"
 #define DIRECTION_PATH(_str, _i) snprintf(_str, PATH_STRING_LENGTH, "/sys/class/gpio/gpio%d/direction", _i)
-#define VALUE_PATH(_str, _i) snprintf(_str, PATH_STRING_LENGTH, "/sys/class/gpio/gpio%d/value". _i)
+#define VALUE_PATH(_str, _i) snprintf(_str, PATH_STRING_LENGTH, "/sys/class/gpio/gpio%d/value", _i)
 
 typedef enum PIN_MODE
 {
@@ -26,9 +27,7 @@ typedef struct _PIN_INFO
 } PIN_INFO;
 
 
-void GetPinInfo(PIN_INFO *Pin);
-
-
-
+enum status GetPinInfo(PIN_INFO *Pin, uint8_t Number);
+char* GetPinModeString(PIN_MODE Mode);
 
 #endif /* _PIN_H*/

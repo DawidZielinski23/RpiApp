@@ -72,8 +72,9 @@ enum status PrintCpuInfo(uint32_t CpuIndex)
         printf("Variant         %#X\n", Cpu.Variant);
         printf("Part            %#X\n", Cpu.Part);
         printf("Revision        %d\n", Cpu.Revision);
-        printf("\n");
     } while(0);
+
+    printf("\n");
 
     return Status;
 }
@@ -90,14 +91,14 @@ enum status PrintAllCpuInfo()
         Status = DiscoverCpuNumber(&DiscoveredCpus);
         if((Status != STATUS_OK) || (DiscoveredCpus == 0))
         {
-            printf("Failed to discover CPUs.\n");
+            printf("Failed to discover CPUs.\n\n");
             break;
         }
 
         Cpus = malloc(sizeof(CPU_INFO) * DiscoveredCpus);
         if(Cpus == NULL)
         {
-            printf("Memory error.\n");
+            printf("Memory error.\n\n");
             break;
         }
 
@@ -106,12 +107,13 @@ enum status PrintAllCpuInfo()
             Status = GetCpuInformation(&Cpus[Index], Index);
             if(Status != STATUS_OK)
             {
-                printf("Failed to get CPU %d information.\n", Index);
+                printf("Failed to get CPU %u information.\n\n", Index);
+                continue;
             }
 
-            printf("CPU number %d information from %d discovered:\n",
+            printf("CPU number %u information from %u discovered:\n",
                    Cpus[Index].Number,
-                   DiscoverCpuNumber);
+                   DiscoveredCpus);
             printf("Name            %s\n", Cpus[Index].Name);
             printf("Implementer     %#X\n", Cpus[Index].Implementer);
             printf("Architecture    %d\n", Cpus[Index].Architecture);
@@ -128,6 +130,95 @@ enum status PrintAllCpuInfo()
     }
 
     return Status;
+}
+
+enum status PrintPinInfo(uint32_t Number)
+{
+    enum status Status = STATUS_OK;
+    uint8_t PinNumber = 0;
+    PIN_INFO Pin = {0, UNKNOWN_MODE, 0};
+
+    do
+    {
+        if((Number > PINS_COUNT) || (Number == 0))
+        {
+            printf("Wrong pin number given!");
+            Status = STATUS_PARAM_ERR;
+            break;
+        }
+
+        PinNumber = (uint8_t)Number;
+
+        Status = GetPinInfo(&Pin, PinNumber);
+        if(Status != STATUS_OK)
+        {
+            printf("Failed to get %u Pin infmoration!\n", PinNumber);
+        }
+
+        printf("Pin %02u Mode %10s Value %u\n",
+               Pin.Number,
+               GetPinModeString(Pin.Mode),
+               Pin.Value);
+    } while(0);
+
+    printf("\n");
+
+    return Status;
+}
+
+enum status DiscoverAllPins()
+{
+    enum status Status = STATUS_OK;
+    PIN_INFO* Pins = NULL;
+    uint8_t Index = 0;
+
+    do
+    {
+        Pins = malloc(sizeof(PIN_INFO) * PINS_COUNT);
+        if(Pins == NULL)
+        {
+            printf("Error durring discovering pins!\n");
+            Status = STATUS_NO_MEMORY;
+            break;
+        }
+
+        for(Index = 1; Index <= PINS_COUNT; Index++)
+        {
+            Status = GetPinInfo(&Pins[Index], Index);
+            if(Status == STATUS_OK)
+            {
+                printf("Pin %02u Mode %10s Value %u\n",
+                       Pins[Index].Number,
+                       GetPinModeString(Pins[Index].Mode),
+                       Pins[Index].Value);
+            }
+            else
+            {
+                printf("Pin %02u Mode %10s Value %s\n",
+                       Index,
+                       GetPinModeString(UNKNOWN_MODE),
+                       "N/A");
+            }
+        }
+    } while(0);
+
+    printf("\n");
+
+    return Status;
+}
+
+void ShowHelp()
+{
+    printf("Appliacation usage:\n");
+    printf("-pin=X      - Get X pin information\n");
+    printf("-gpio_all   - Discover all RPi pins\n");
+    printf("-cpu=X      - Show X CPU information\n");
+    printf("-all        - Show all CPU information\n");
+    printf("-pi_info    - Show RPi basic data\n");
+    printf("-debuglog=X - Enable collecting logs and"
+           "              set log level to X\n");
+    printf("-help       - Display help");
+    printf("\n");
 }
 
 void PrintHeader()
@@ -241,10 +332,10 @@ enum status RunCommands()
                     //ShowHelp();
                     break;
                 case GET_PIN_INFO:
-                    //Status = PrintPinInfo(ValueArray[Index]);
+                    Status = PrintPinInfo(ValueArray[Index]);
                     break;
                 case GET_ALL_PINS_INFO:
-                    //Status = DiscoverAllPins();
+                    Status = DiscoverAllPins();
                     break;
                 case GET_CPU_INFO:
                     Status = PrintCpuInfo(ValueArray[Index]);
