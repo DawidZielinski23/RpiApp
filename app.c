@@ -329,6 +329,7 @@ enum status RunCommands()
                 case SET_DEBUGLOG:
                     OpenDebugFile();
                     SetGlobalDebugLevel(ValueArray[Index]);
+                    break;
                 case SHOW_HELP:
                     ShowHelp();
                     break;
@@ -373,6 +374,7 @@ enum status RunCommands()
 int main(uint32_t argc, char** argv)
 {
     enum status Status = STATUS_OK;
+    bool DebugFileOpen = false;
 
     do
     {
@@ -385,6 +387,12 @@ int main(uint32_t argc, char** argv)
         }
 
         Status = RunCommands();
+
+        DebugFileOpen = IsDebugLogFileOpen();
+        if(DebugFileOpen = true)
+        {
+            CloseDebugFile();
+        }
 
     } while(0);
 

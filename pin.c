@@ -8,7 +8,7 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
     char PinNumber[PIN_STRING_LENGTH] = {'\0'};
     enum status Status = STATUS_OK;
     ssize_t WrittenBytes = 0;
-    int Descriptor = -1;
+    FILE* Descriptor = NULL;
     int ReadStatus = 0;
     char Value = 0;
 
@@ -25,10 +25,10 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
 
         Pin->Number = Number;
 
-        Descriptor = open(EXPORT_PATH, 0x1);
-        if(Descriptor == -1)
+        Descriptor = fopen(EXPORT_PATH, "r");
+        if(Descriptor == NULL)
         {
-            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to open %s!", EXPORT_PATH);
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to fopen %s!", EXPORT_PATH);
             Status = STATUS_FILE_ERR;
             break;
         }
@@ -43,13 +43,13 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
             break;
         }
 
-        close(Descriptor);
+        fclose(Descriptor);
 
-        Descriptor = open(DIRECTION_PATH(DirectionString, Pin->Number), 0x1);
-        if(Descriptor == -1)
+        Descriptor = fopen(DIRECTION_PATH(DirectionString, Pin->Number), "r");
+        if(Descriptor == NULL)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
-                          "Failed to open %s!",
+                          "Failed to fopen %s!",
                           DIRECTION_PATH(DirectionString, Pin->Number));
             Status = STATUS_FILE_ERR;
             break;
@@ -65,7 +65,7 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
             break;
         }
 
-        close(Descriptor);
+        fclose(Descriptor);
 
         if(!strncmp(ModeString, "in", strlen(ModeString) -1))
         {
@@ -80,11 +80,11 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
             Pin->Mode = UNKNOWN_MODE;
         }
 
-        Descriptor = open(VALUE_PATH(ValuePath, Pin->Number), 0x1);
-        if(Descriptor == -1)
+        Descriptor = fopen(VALUE_PATH(ValuePath, Pin->Number), "r");
+        if(Descriptor == NULL)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
-                          "Failed to open %s!",
+                          "Failed to fopen %s!",
                           VALUE_PATH(ValuePath, Pin->Number));
             Status = STATUS_FILE_ERR;
             break;
@@ -100,12 +100,17 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
             break;
         }
 
-        close(Descriptor);
+        fclose(Descriptor);
 
         Pin->Value = atoi(&Value);
     } while(0);
 
     LOG_FUNCTION_END(__func__);
+
+    if(Descriptor != NULL)
+    {
+        fclose(Descriptor);
+    }
 
     return Status;
 }
