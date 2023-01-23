@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <string.h>
-#include "..\debug_logging\debug_logging.h"
+#include "debug_logging/debug_logging.h"
 
 enum status
 {
@@ -19,7 +19,8 @@ enum status
     STATUS_FILE_ERR,
     STATUS_STR_ERR,
     STATUS_INPUT_ERR,
-    STATUS_CMD_ERR
+    STATUS_CMD_ERR,
+    STATUS_MEM_ERR
 };
 
 #endif /* _LIBRARIES_H*/

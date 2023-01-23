@@ -57,19 +57,20 @@ bool CheckCommand(char* Command)
             Command++;
         }
 
-        for(Index = 0;Index < strlen(Command); Index++)
+        for(Index = 0; Index < strlen(Command); Index++)
         {
             if(Command[Index] == '=')
             {
-                Pointer = Command + Index;
+                Pointer = Command + Index + 1;
                 Value = atoi(Pointer);
                 EqualSignFound = true;
+                break;
             }
         }
 
         if(EqualSignFound == true)
         {
-            Length = Index -1;
+            Length = Index;
         }
         else
         {
@@ -90,7 +91,7 @@ bool CheckCommand(char* Command)
 
         for(Index = 0; Index < COMMANDS_COUNT; Index++)
         {
-            if(!strncmp(AuxiliaryCommand, Global_CommandsString[Index], COMMAND_LENGTH) != NULL)
+            if(!strncmp(AuxiliaryCommand, Global_CommandsString[Index], COMMAND_LENGTH))
             {
                 Global_CommandsActive[Index] = true;
                 if(EqualSignFound == true)
@@ -122,7 +123,7 @@ enum status CopyCommandArray(bool* Array, uint8_t ArraySize)
 
     if((Array != NULL) && (ArraySize == COMMANDS_COUNT))
     {
-        memcpy(Array, Global_CommandsActive, COMMANDS_COUNT);
+        memcpy(Array, Global_CommandsActive, sizeof(bool) * COMMANDS_COUNT);
     }
     else
     {
@@ -139,7 +140,7 @@ enum status CopyValueArray(uint32_t* Array, uint8_t ArraySize)
 
     if((Array != NULL) && (ArraySize == COMMANDS_COUNT))
     {
-        memcpy(Array, Global_CommandsActive, COMMANDS_COUNT);
+        memcpy(Array, Global_CommandsValues, sizeof(uint32_t) * COMMANDS_COUNT);
     }
     else
     {

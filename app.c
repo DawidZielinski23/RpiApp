@@ -16,7 +16,7 @@ enum status PrintPiBasicInfo()
 
     Status = GetPiBasicInfo(&PiInfo, Bcm, Serial);
 
-    if(Status = STATUS_OK)
+    if(Status == STATUS_OK)
     {
         printf("Raspberry Pi information:\n");
         printf("Bcm             %s\n", Bcm);
@@ -47,7 +47,7 @@ enum status PrintCpuInfo(uint32_t CpuIndex)
         Status = DiscoverCpuNumber(&DiscoveredCpus);
         if(Status != STATUS_OK)
         {
-            printf("Failed to discover CPUs.\n");
+            printf("Failed to discover CPUs number.\n");
             break;
         }
 
@@ -178,7 +178,7 @@ enum status DiscoverAllPins()
         if(Pins == NULL)
         {
             printf("Error durring discovering pins!\n");
-            Status = STATUS_NO_MEMORY;
+            Status = STATUS_MEM_ERR;
             break;
         }
 
@@ -215,7 +215,7 @@ void ShowHelp()
     printf("-cpu=X      - Show X CPU information\n");
     printf("-all        - Show all CPU information\n");
     printf("-pi_info    - Show RPi basic data\n");
-    printf("-debuglog=X - Enable collecting logs and"
+    printf("-debuglog=X - Enable collecting logs and\n"
            "              set log level to X\n");
     printf("-help       - Display help");
     printf("\n");
@@ -230,11 +230,12 @@ void PrintHeader()
     for(Index = 0; Index < HEADER_WIDTH; Index++)
     {
         printf("=");
-        if((Index == HEADER_WIDTH) && (HeaderShowed == false))
+        if((Index == HEADER_WIDTH - 1) && (HeaderShowed == false))
         {
             printf("\n");
             printf(HEADER);
             printf(AUTHOR);
+            printf("=");
             Index = 0;
             HeaderShowed = true;
         }
@@ -251,7 +252,7 @@ enum status ParseArgs(char** argv, uint32_t argc)
 
     do
     {
-        if((argv == NULL) || (argc == 0))
+        if((argv == NULL) || (argc == 1))
         {
             printf("No parameters given!\n");
             ErrorOccured = true;
@@ -259,7 +260,7 @@ enum status ParseArgs(char** argv, uint32_t argc)
             break;
         }
 
-        for(Index = 0; Index < argc; Index++)
+        for(Index = 1; Index < argc; Index++)
         {
             CommandFound = CheckCommand(argv[Index]);
             if(CommandFound == false)
@@ -278,7 +279,7 @@ enum status ParseArgs(char** argv, uint32_t argc)
 
     if(ErrorOccured == true)
     {
-        //ShowHelp();
+        ShowHelp();
     }
 
     return Status;
@@ -296,14 +297,14 @@ enum status RunCommands()
         ValueArray = malloc(sizeof(uint32_t) * COMMANDS_COUNT);
         if(ValueArray == NULL)
         {
-            Status = STATUS_NO_MEMORY;
+            Status = STATUS_MEM_ERR;
             break;
         }
 
         CommandArray = malloc(sizeof(uint32_t) * COMMANDS_COUNT);
         if(CommandArray == NULL)
         {
-            Status = STATUS_NO_MEMORY;
+            Status = STATUS_MEM_ERR;
             break;
         }
 
@@ -329,7 +330,7 @@ enum status RunCommands()
                     OpenDebugFile();
                     SetGlobalDebugLevel(ValueArray[Index]);
                 case SHOW_HELP:
-                    //ShowHelp();
+                    ShowHelp();
                     break;
                 case GET_PIN_INFO:
                     Status = PrintPinInfo(ValueArray[Index]);
@@ -369,7 +370,7 @@ enum status RunCommands()
     return Status;
 }
 
-int main(char** argv, uint32_t argc)
+int main(uint32_t argc, char** argv)
 {
     enum status Status = STATUS_OK;
 

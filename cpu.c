@@ -631,8 +631,8 @@ enum status DiscoverCpuNumber(uint8_t* Count)
         {
             if(!strncmp(ReadLine, PROCESSOR_STRING, PROCESSOR_STRING_LENGTH))
             {
+                (*Count)++;
                 WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "\"%s\" found.", PROCESSOR_STRING);
-                *Count++;
             }
         }
 
@@ -665,6 +665,7 @@ enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
     uint8_t ReadCpuNumber = 0;
     bool CpuFound = false;
     char* String = NULL;
+    uint32_t Index = 0;
 
     LOG_FUNCTION_NAME(__func__);
 
@@ -698,9 +699,10 @@ enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
                 }
 
                 String = String + 2;
-                ReadCpuNumber = (uint8_t)strtoul(ReadLine, NULL, 10);
+                ReadCpuNumber = (uint8_t)strtoul(String, NULL, 0);
                 if(ReadCpuNumber == CpuNumber)
                 {
+                    CpuInfo->Number = ReadCpuNumber;
                     WriteDebugLog(DEBUG_LOGGING_INFO_LEVEL, "CPU number %d found.", CpuNumber);
                     CpuFound = true;
                     break;
@@ -742,6 +744,15 @@ enum status GetCpuInformation(CPU_INFO* CpuInfo, uint8_t CpuNumber)
         }
 
         String = String + 2;
+
+        for(Index = 0; Index < strlen(String); Index++)
+        {
+            if(String[Index] == '\n')
+            {
+                String[Index] = '\0';
+            }
+        }
+
         strncpy(CpuInfo->Name, String, MAX_LINE_LENGTH - 1);
         if(CpuInfo->Name == NULL)
         {
