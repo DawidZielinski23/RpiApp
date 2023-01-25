@@ -2,14 +2,13 @@
 
 enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
 {
-    char DirectionString[PATH_STRING_LENGTH] = {'\0'};
+    char DirectionPath[PATH_STRING_LENGTH] = {'\0'};
     char ModeString[MODE_STRING_LENGTH] = {'\0'};
     char ValuePath[PATH_STRING_LENGTH] = {'\0'};
     char PinNumber[PIN_STRING_LENGTH] = {'\0'};
     enum status Status = STATUS_OK;
-    ssize_t WrittenBytes = 0;
     FILE* Descriptor = NULL;
-    int ReadStatus = 0;
+    char* Path = NULL;
     char Value = 0;
 
     LOG_FUNCTION_NAME(__func__);
@@ -25,7 +24,7 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
 
         Pin->Number = Number;
 
-        Descriptor = fopen(EXPORT_PATH, "r");
+        Descriptor = fopen(EXPORT_PATH, "w");
         if(Descriptor == NULL)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to fopen %s!", EXPORT_PATH);
@@ -35,8 +34,7 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
 
         snprintf(PinNumber, MODE_STRING_LENGTH, "%d", Pin->Number);
 
-        WrittenBytes = write(Descriptor, PinNumber, strlen(PinNumber) - 1);
-        if(WrittenBytes != (strlen(PinNumber) - 1))
+        if(fputs(PinNumber, Descriptor) == EOF)
         {
             WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Write to %s failed", EXPORT_PATH);
             Status = STATUS_WRITE_ERR;
@@ -44,28 +42,28 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
         }
 
         fclose(Descriptor);
+        Descriptor = NULL;
 
-        Descriptor = fopen(DIRECTION_PATH(DirectionString, Pin->Number), "r");
+        DIRECTION_PATH(DirectionPath, Pin->Number);
+        Descriptor = fopen(DirectionPath, "r");
         if(Descriptor == NULL)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
                           "Failed to fopen %s!",
-                          DIRECTION_PATH(DirectionString, Pin->Number));
+                          Path);
             Status = STATUS_FILE_ERR;
             break;
         }
 
-        ReadStatus = read(Descriptor, ModeString , sizeof(ModeString));
-        if(ReadStatus == -1)
+        if(fgets(ModeString, MODE_STRING_LENGTH, Descriptor) == NULL)
         {
-            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
-                          "Reading %s failed",
-                          DIRECTION_PATH(DirectionString, Pin->Number));
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Reading %s failed", DirectionPath);
             Status = STATUS_READ_ERR;
             break;
         }
 
         fclose(Descriptor);
+        Descriptor = NULL;
 
         if(!strncmp(ModeString, "in", strlen(ModeString) -1))
         {
@@ -80,29 +78,46 @@ enum status GetPinInfo(PIN_INFO* Pin, uint8_t Number)
             Pin->Mode = UNKNOWN_MODE;
         }
 
-        Descriptor = fopen(VALUE_PATH(ValuePath, Pin->Number), "r");
+        VALUE_PATH(ValuePath, Pin->Number);
+        Descriptor = fopen(ValuePath, "r");
         if(Descriptor == NULL)
         {
             WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL,
                           "Failed to fopen %s!",
-                          VALUE_PATH(ValuePath, Pin->Number));
+                          Path);
             Status = STATUS_FILE_ERR;
             break;
         }
 
-        ReadStatus = read(Descriptor, Value, sizeof(Value));
-        if(ReadStatus == -1)
+        if(fgets(&Value, sizeof(Value), Descriptor) == NULL)
         {
-            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL,
-                          "Reading %s failed",
-                          VALUE_PATH(ValuePath, Pin->Number));
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Reading %s failed", ValuePath);
             Status = STATUS_READ_ERR;
             break;
         }
 
-        fclose(Descriptor);
-
         Pin->Value = atoi(&Value);
+
+        fclose(Descriptor);
+        Descriptor = NULL;
+
+        Descriptor = fopen(UNEXPORT_PATH, "w");
+        if(Descriptor == NULL)
+        {
+            WriteDebugLog(DEBUG_LOGGING_CRITICAL_LEVEL, "Failed to fopen %s!", UNEXPORT_PATH);
+            Status = STATUS_FILE_ERR;
+            break;
+        }
+
+        if(fputs(PinNumber, Descriptor) == EOF)
+        {
+            WriteDebugLog(DEBUG_LOGGING_ERROR_LEVEL, "Write to %s failed", UNEXPORT_PATH);
+            Status = STATUS_WRITE_ERR;
+            break;
+        }
+
+        fclose(Descriptor);
+        Descriptor = NULL;
     } while(0);
 
     LOG_FUNCTION_END(__func__);

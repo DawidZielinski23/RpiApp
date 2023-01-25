@@ -155,7 +155,7 @@ enum status PrintPinInfo(uint32_t Number)
             printf("Failed to get %u Pin infmoration!\n", PinNumber);
         }
 
-        printf("Pin %02u Mode %10s Value %u\n",
+        printf("Pin %02u | Mode %10s | Value %u\n",
                Pin.Number,
                GetPinModeString(Pin.Mode),
                Pin.Value);
@@ -182,25 +182,30 @@ enum status DiscoverAllPins()
             break;
         }
 
-        for(Index = 1; Index <= PINS_COUNT; Index++)
+        for(Index = 0; Index < PINS_COUNT; Index++)
         {
-            Status = GetPinInfo(&Pins[Index], Index);
+            Status = GetPinInfo(&Pins[Index], Index + 1);
             if(Status == STATUS_OK)
             {
-                printf("Pin %02u Mode %10s Value %u\n",
+                printf("Pin %02u | Mode %10s | Value %u\n",
                        Pins[Index].Number,
                        GetPinModeString(Pins[Index].Mode),
                        Pins[Index].Value);
             }
             else
             {
-                printf("Pin %02u Mode %10s Value %s\n",
-                       Index,
+                printf("Pin %02u | Mode %10s | Value %s\n",
+                       Index + 1,
                        GetPinModeString(UNKNOWN_MODE),
                        "N/A");
             }
         }
     } while(0);
+
+    if(Pins != NULL)
+    {
+        free(Pins);
+    }
 
     printf("\n");
 
@@ -389,7 +394,7 @@ int main(uint32_t argc, char** argv)
         Status = RunCommands();
 
         DebugFileOpen = IsDebugLogFileOpen();
-        if(DebugFileOpen = true)
+        if(DebugFileOpen == true)
         {
             CloseDebugFile();
         }
